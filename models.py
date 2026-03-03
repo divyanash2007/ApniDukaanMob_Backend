@@ -9,6 +9,7 @@ class User(Base):
     username = Column(String, unique=True, index=True) # Shop name
     business_email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    has_lifetime_subscription = Column(Boolean, default=False)
 
 class Product(Base):
     __tablename__ = "products"

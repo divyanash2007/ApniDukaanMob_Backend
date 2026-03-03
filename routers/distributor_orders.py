@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 import models, schemas, auth
 from database import get_db
@@ -20,7 +20,7 @@ def create_order(order: schemas.DistributorOrderCreate, db: Session = Depends(ge
     db.refresh(new_order)
     return new_order
 
-@router.get("/pending", response_model=schemas.DistributorOrderResponse)
+@router.get("/pending", response_model=Optional[schemas.DistributorOrderResponse])
 def get_pending_order(db: Session = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
     user = db.query(models.User).filter(models.User.username == current_user).first()
     pending_order = db.query(models.DistributorOrder).filter(
@@ -28,21 +28,15 @@ def get_pending_order(db: Session = Depends(get_db), current_user: str = Depends
         models.DistributorOrder.status == "PENDING"
     ).order_by(models.DistributorOrder.timestamp.desc()).first()
     
-    if not pending_order:
-        raise HTTPException(status_code=404, detail="No pending orders found")
-        
     return pending_order
 
-@router.get("/last", response_model=schemas.DistributorOrderResponse)
+@router.get("/last", response_model=Optional[schemas.DistributorOrderResponse])
 def get_last_order(db: Session = Depends(get_db), current_user: str = Depends(auth.get_current_user)):
     user = db.query(models.User).filter(models.User.username == current_user).first()
     last_order = db.query(models.DistributorOrder).filter(
         models.DistributorOrder.owner_id == user.id
     ).order_by(models.DistributorOrder.timestamp.desc()).first()
     
-    if not last_order:
-        raise HTTPException(status_code=404, detail="No orders found")
-        
     return last_order
 
 @router.put("/{order_id}/deliver", response_model=schemas.DistributorOrderResponse)

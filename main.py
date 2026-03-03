@@ -8,7 +8,7 @@ from google.auth.transport import requests as google_requests
 
 import models, schemas, auth
 from database import engine, get_db
-from routers import products, bills, stats, distributor_orders
+from routers import products, bills, stats, distributor_orders, payment
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -30,6 +30,7 @@ app.include_router(products.router)
 app.include_router(bills.router)
 app.include_router(stats.router)
 app.include_router(distributor_orders.router)
+app.include_router(payment.router)
 
 # --- AUTHENTICATION ---
 @app.post("/auth/signup", response_model=schemas.UserResponse, tags=["auth"])
@@ -92,7 +93,7 @@ def google_auth(request: schemas.GoogleLoginRequest, db: Session = Depends(get_d
                 
             # Dummy password since it's google auth
             import secrets
-            dummy_password = secrets.token_urlsafe(16)
+            dummy_password = secrets.token_hex(32)
             hashed_password = auth.get_password_hash(dummy_password)
             
             user = models.User(username=username, business_email=email, hashed_password=hashed_password)
