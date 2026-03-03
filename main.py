@@ -3,6 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 import models, schemas, auth
 from database import engine, get_db
@@ -14,7 +16,11 @@ app = FastAPI(title="ApniDukaan Mobile API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:4173",
+        "https://apnidukaan-lemon.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,6 +65,51 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
     refresh_token = auth.create_refresh_token(data={"sub": user.username})
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+import os
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+if not GOOGLE_CLIENT_ID:
+    print("WARNING: GOOGLE_CLIENT_ID environment variable not set. Google Auth will fail.")
+
+@app.post("/auth/google", tags=["auth"])
+def google_auth(request: schemas.GoogleLoginRequest, db: Session = Depends(get_db)):
+    try:
+        idinfo = id_token.verify_oauth2_token(request.token, google_requests.Request(), GOOGLE_CLIENT_ID)
+        email = idinfo.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Google token does not contain email")
+            
+        user = db.query(models.User).filter(models.User.business_email == email).first()
+        if not user:
+            # Create user
+            username = email.split('@')[0]
+            # Ensure unique username
+            base_username = username
+            counter = 1
+            while db.query(models.User).filter(models.User.username == username).first():
+                username = f"{base_username}{counter}"
+                counter += 1
+                
+            # Dummy password since it's google auth
+            import secrets
+            dummy_password = secrets.token_urlsafe(16)
+            hashed_password = auth.get_password_hash(dummy_password)
+            
+            user = models.User(username=username, business_email=email, hashed_password=hashed_password)
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+        access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth.create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        refresh_token = auth.create_refresh_token(data={"sub": user.username})
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+    except Exception as e:
+        print(f"Google login error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Google token")
 
 @app.post("/auth/refresh", tags=["auth"])
 def refresh_token(request: schemas.TokenRefreshRequest):

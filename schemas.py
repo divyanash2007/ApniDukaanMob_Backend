@@ -5,6 +5,9 @@ import datetime
 class UserBase(BaseModel):
     username: str
 
+class GoogleLoginRequest(BaseModel):
+    token: str
+
 class UserCreate(UserBase):
     business_email: str
     password: str
