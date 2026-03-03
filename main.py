@@ -9,6 +9,11 @@ from google.auth.transport import requests as google_requests
 import models, schemas, auth
 from database import engine, get_db
 from routers import products, bills, stats, distributor_orders, payment
+import migrate_db
+
+# Run custom migrations (like adding columns) before creating tables
+print("Running database migrations...")
+migrate_db.migrate()
 
 models.Base.metadata.create_all(bind=engine)
 
