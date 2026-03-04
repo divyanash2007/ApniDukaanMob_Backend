@@ -17,7 +17,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), current_user: str = Depen
     user = db.query(models.User).filter(models.User.username == current_user).first()
     
     total_products = db.query(models.Product).filter(models.Product.owner_id == user.id).count()
-    low_stock_products = db.query(models.Product).filter(models.Product.stock < 10, models.Product.owner_id == user.id).count()
+    low_stock_products = db.query(models.Product).filter(models.Product.stock < 5, models.Product.owner_id == user.id).count()
     
     # Calculate stock value based on buying_price, fallback to price (selling price) if none
     all_products = db.query(models.Product).filter(models.Product.owner_id == user.id).all()
