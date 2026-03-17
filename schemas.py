@@ -20,8 +20,8 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    username: str
     business_email: str
-    has_lifetime_subscription: bool
     class Config:
         from_attributes = True
 
@@ -76,11 +76,3 @@ class DistributorOrderResponse(DistributorOrderBase):
     status: str
     class Config:
         from_attributes = True
-
-class PaymentOrderRequest(BaseModel):
-    amount: float
-
-class PaymentVerifyRequest(BaseModel):
-    razorpay_order_id: str
-    razorpay_payment_id: str
-    razorpay_signature: str

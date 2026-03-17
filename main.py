@@ -8,7 +8,7 @@ from google.auth.transport import requests as google_requests
 
 import models, schemas, auth
 from database import engine, get_db
-from routers import products, bills, stats, distributor_orders, payment
+from routers import products, bills, stats, distributor_orders
 import migrate_db
 
 # Run custom migrations (like adding columns) before creating tables
@@ -35,7 +35,6 @@ app.include_router(products.router)
 app.include_router(bills.router)
 app.include_router(stats.router)
 app.include_router(distributor_orders.router)
-app.include_router(payment.router)
 
 # --- AUTHENTICATION ---
 @app.post("/auth/signup", response_model=schemas.UserResponse, tags=["auth"])
